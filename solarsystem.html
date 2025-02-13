@@ -464,6 +464,38 @@
         createPlanetButton(planet, index);
       });
 
+      function createMoonButtons() {
+        planets.forEach((planet) => {
+          planet.moons.forEach((moon) => {
+            if (moon && moon.mesh) {
+              // Create a button for each moon
+              let moonButton = document.createElement("button");
+              moonButton.innerText = `${planet.name} - ${
+                moon.mesh.name || moon.name
+              }`;
+              moonButton.style.margin = "3px";
+              moonButton.style.padding = "6px";
+              moonButton.style.cursor = "pointer";
+              moonButton.style.border = "none";
+              moonButton.style.background = "#ccc";
+              moonButton.style.color = "#000";
+              moonButton.style.borderRadius = "5px";
+
+              // Add event listener to move camera to the moon when clicked
+              moonButton.addEventListener("click", () =>
+                moveCameraTo(moon.mesh)
+              );
+
+              // Append button to the controls container
+              controlsContainer.appendChild(moonButton);
+            }
+          });
+        });
+      }
+
+      // Call this function after planets and moons are initialized
+      createMoonButtons();
+
       function moveCameraTo(target) {
         let targetPosition = new THREE.Vector3();
         target.getWorldPosition(targetPosition);
