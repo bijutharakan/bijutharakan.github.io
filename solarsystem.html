@@ -66,7 +66,7 @@
           emissiveIntensity: 2,
         });
         let planet = new THREE.Mesh(geometry, material);
-
+        planet.name = name;
         let labelDiv = document.createElement("div");
         labelDiv.style.position = "absolute";
         labelDiv.style.color = "white";
@@ -146,7 +146,7 @@
         {
           name: "Mercury",
           size: 2.4,
-          distance: 80,
+          distance: 100,
           speed: 0.004,
           texture: "./mercury.jpg",
           glow: "C07B41",
@@ -155,7 +155,7 @@
         {
           name: "Venus",
           size: 6,
-          distance: 120,
+          distance: 145,
           speed: 0.003,
           texture: "./venus2.jpg",
           glow: "C07B41",
@@ -164,7 +164,7 @@
         {
           name: "Earth",
           size: 6.4,
-          distance: 160,
+          distance: 200,
           speed: 0.002,
           texture: "./earth.jpg",
           glow: "718ff8",
@@ -181,7 +181,7 @@
         {
           name: "Mars",
           size: 3.4,
-          distance: 200,
+          distance: 240,
           speed: 0.0015,
           texture: "./mars.jpg",
           glow: "C07B41",
@@ -191,21 +191,21 @@
               size: 0.9,
               distance: 5,
               speed: 0.015,
-              texture: "./phobos.jpg",
+              texture: "./phobos.png",
             },
             {
               name: "Deimos",
               size: 0.5,
               distance: 8,
               speed: 0.012,
-              texture: "./deimos.jpg",
+              texture: "./deimos.png",
             },
           ],
         },
         {
           name: "Jupiter",
           size: 40,
-          distance: 300,
+          distance: 360,
           speed: 0.0008,
           texture: "./jupiter.jpg",
           glow: "C07B41",
@@ -213,37 +213,37 @@
             {
               name: "Io",
               size: 2.5,
-              distance: 15,
+              distance: 45,
               speed: 0.007,
-              texture: "./io.jpg",
+              texture: "./io.png",
             },
             {
               name: "Europa",
               size: 2.3,
-              distance: 20,
+              distance: 50,
               speed: 0.006,
-              texture: "./europa.jpg",
+              texture: "./europa.png",
             },
             {
               name: "Ganymede",
               size: 2.7,
-              distance: 25,
+              distance: 55,
               speed: 0.005,
-              texture: "./ganymede.jpg",
+              texture: "./ganymede.png",
             },
             {
               name: "Callisto",
               size: 2.6,
-              distance: 30,
+              distance: 60,
               speed: 0.004,
-              texture: "./callisto.jpg",
+              texture: "./callisto.png",
             },
           ],
         },
         {
           name: "Saturn",
           size: 28,
-          distance: 400,
+          distance: 480,
           speed: 0.0005,
           texture: "./saturn.jpg",
           glow: "C07B41",
@@ -253,23 +253,23 @@
             {
               name: "Titan",
               size: 3.2,
-              distance: 22,
+              distance: 36,
               speed: 0.006,
-              texture: "./titan.jpg",
+              texture: "./titan.png",
             },
             {
               name: "Enceladus",
               size: 1.1,
-              distance: 18,
+              distance: 32,
               speed: 0.008,
-              texture: "./enceladus.jpg",
+              texture: "./enceladus.png",
             },
           ],
         },
         {
           name: "Uranus",
           size: 15,
-          distance: 500,
+          distance: 590,
           speed: 0.0003,
           texture: "./uranus.jpg",
           glow: "C07B41",
@@ -278,7 +278,7 @@
         {
           name: "Neptune",
           size: 14,
-          distance: 600,
+          distance: 700,
           speed: 0.0002,
           texture: "./neptune.jpg",
           glow: "718ff8",
@@ -288,7 +288,7 @@
               size: 2.5,
               distance: 20,
               speed: 0.007,
-              texture: "./triton.jpg",
+              texture: "./triton.png",
             },
           ],
         },
@@ -299,8 +299,15 @@
           map: textureLoader.load(moonData.texture),
         });
         let moon = new THREE.Mesh(moonGeometry, moonMaterial);
+        moon.name = moonData.name;
 
-        parentPlanet.mesh.add(moon); // Attach moon to the planet
+        // ✅ Set moon’s initial position relative to the planet
+        let moonInitialPosition = new THREE.Vector3(moonData.distance, 0, 0);
+        moon.position.copy(moonInitialPosition);
+
+        // parentPlanet.mesh.add(moon); // ✅ Attach moon to planet so it moves with it
+        scene.add(moon);
+
         return {
           mesh: moon,
           speed: moonData.speed,
@@ -319,6 +326,7 @@
         scene.add(planet);
 
         let planetObject = {
+          name: data.name,
           mesh: planet,
           speed: data.speed,
           distance: data.distance,
@@ -358,13 +366,26 @@
           planet.angle += planet.speed;
           planet.mesh.position.x = planet.distance * Math.cos(planet.angle);
           planet.mesh.position.z = planet.distance * Math.sin(planet.angle);
-          planet.mesh.rotation.y += 0.02; // Rotate planet on its axis
+          planet.mesh.rotation.y += 0.02;
 
-          // Move each moon around its planet
           planet.moons.forEach((moon) => {
             moon.angle += moon.speed;
-            moon.mesh.position.x = moon.distance * Math.cos(moon.angle);
-            moon.mesh.position.z = moon.distance * Math.sin(moon.angle);
+
+            // ✅ Moon orbits around the planet
+            let moonX = moon.distance * Math.cos(moon.angle);
+            let moonZ = moon.distance * Math.sin(moon.angle);
+
+            let planetPosition = planet.mesh.position;
+
+            // ✅ Keep moon’s position relative to the planet
+            moon.mesh.position.set(
+              planetPosition.x + moonX,
+              planetPosition.y,
+              planetPosition.z + moonZ
+            );
+
+            // ✅ Add self-rotation (moon spinning around its axis)
+            moon.mesh.rotation.y += 0.02; // Adjust the speed if needed
           });
 
           let vector = new THREE.Vector3();
@@ -378,7 +399,6 @@
         renderer.render(scene, camera);
       }
 
-      // Create UI buttons
       let controlsContainer = document.createElement("div");
       controlsContainer.style.position = "absolute";
       controlsContainer.style.top = "10px";
@@ -389,7 +409,7 @@
       controlsContainer.style.borderRadius = "10px";
       document.body.appendChild(controlsContainer);
 
-      // Function to create buttons for each planet
+      // Create buttons for each planet
       function createPlanetButton(planet, index) {
         let button = document.createElement("button");
         button.innerText = planet.name;
@@ -405,6 +425,26 @@
           moveCameraTo(planets[index].mesh)
         );
         controlsContainer.appendChild(button);
+
+        planet.moons.forEach((moon) => {
+          if (moon && moon.mesh) {
+            // Ensure the moon object exists and has a mesh property
+            let moonButton = document.createElement("button");
+            moonButton.innerText = `${planet.name} - ${
+              moon.mesh.name || moon.name
+            }`;
+            moonButton.style.margin = "3px";
+            moonButton.style.padding = "6px";
+            moonButton.style.cursor = "pointer";
+            moonButton.style.border = "none";
+            moonButton.style.background = "#ccc";
+            moonButton.style.color = "#000";
+            moonButton.style.borderRadius = "5px";
+
+            moonButton.addEventListener("click", () => moveCameraTo(moon.mesh));
+            controlsContainer.appendChild(moonButton);
+          }
+        });
       }
 
       // Create a button for the Sun
@@ -420,24 +460,19 @@
       sunButton.addEventListener("click", () => moveCameraTo(sun));
       controlsContainer.appendChild(sunButton);
 
-      // Create buttons for each planet
       planetData.forEach((planet, index) => {
         createPlanetButton(planet, index);
       });
 
-      // Function to Move Camera to a Planet
       function moveCameraTo(target) {
         let targetPosition = new THREE.Vector3();
         target.getWorldPosition(targetPosition);
 
-        // Move camera to focus on the selected object
         camera.position.set(
-          targetPosition.x + 100, // Offset position to view it better
-          targetPosition.y + 50,
-          targetPosition.z + 100
+          targetPosition.x + 50,
+          targetPosition.y + 30,
+          targetPosition.z + 50
         );
-
-        // Change OrbitControls target dynamically
         controls.target.copy(targetPosition);
         controls.update();
       }
