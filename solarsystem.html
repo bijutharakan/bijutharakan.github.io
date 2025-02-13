@@ -1,113 +1,331 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Solar System Simulation</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { display: block; background: black; }
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+
+      canvas {
+        display: block;
+        background: black;
+      }
     </style>
-</head>
-<body>
-<script>
-    let scene = new THREE.Scene();
-    let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-    let renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+  </head>
 
-    let textureLoader = new THREE.TextureLoader();
+  <body>
+    <script>
+      let scene = new THREE.Scene();
+      let camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        10000
+      );
+      let renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
 
-    // Ambient Light
-    let ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-    scene.add(ambientLight);
+      let textureLoader = new THREE.TextureLoader();
 
-    // Background Stars
-    let starGeometry = new THREE.BufferGeometry();
-    let starVertices = [];
-    for (let i = 0; i < 5000; i++) {
+      // Ambient Light
+      let ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+      scene.add(ambientLight);
+
+      // Background Stars
+      let starGeometry = new THREE.BufferGeometry();
+      let starVertices = [];
+      for (let i = 0; i < 5000; i++) {
         let x = (Math.random() - 0.5) * 10000;
         let y = (Math.random() - 0.5) * 10000;
         let z = (Math.random() - 0.5) * 10000;
         starVertices.push(x, y, z);
-    }
-    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-    let starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 });
-    let stars = new THREE.Points(starGeometry, starMaterial);
-    scene.add(stars);
+      }
+      starGeometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(starVertices, 3)
+      );
+      let starMaterial = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 1.5,
+      });
+      let stars = new THREE.Points(starGeometry, starMaterial);
+      scene.add(stars);
 
-    function createLabeledObject(name, size, texturePath, emissiveColor) {
+      function createLabeledObject(name, size, texturePath, emissiveColor) {
         let geometry = new THREE.SphereGeometry(size, 64, 64);
-        let material = new THREE.MeshStandardMaterial({ 
-            map: textureLoader.load(texturePath), 
-            emissive: emissiveColor, 
-            emissiveIntensity: 2
+        let material = new THREE.MeshStandardMaterial({
+          map: textureLoader.load(texturePath),
+          emissive: emissiveColor,
+          emissiveIntensity: 2,
         });
         let planet = new THREE.Mesh(geometry, material);
-        
-        let labelDiv = document.createElement('div');
-        labelDiv.style.position = 'absolute';
-        labelDiv.style.color = 'white';
-        labelDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        labelDiv.style.padding = '4px';
-        labelDiv.style.fontSize = '12px';
+
+        let labelDiv = document.createElement("div");
+        labelDiv.style.position = "absolute";
+        labelDiv.style.color = "white";
+        labelDiv.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+        labelDiv.style.padding = "4px";
+        labelDiv.style.fontSize = "12px";
         labelDiv.innerHTML = name;
         document.body.appendChild(labelDiv);
-        
+
         planet.label = labelDiv;
-        
+
         return planet;
-    }
+      }
 
-    let sun = createLabeledObject('Sun', 50, './sun.jpg', 0xff4500);
-    scene.add(sun);
+      // Sun with rotation
+      let sun = createLabeledObject("Sun", 90, "./sun.jpg", 0xff4500);
+      scene.add(sun);
 
-    let planets = [];
-let planetData  = [
-    { name: 'Mercury', size: 2, distance: 80, speed: 0.004, texture: './mercury.jpg', glow: 0xaaaaaa },
-    { name: 'Venus', size: 5, distance: 120, speed: 0.003, texture: './venus.jpg', glow: 0xffaa00 },
-    { name: 'Earth', size: 6.3, distance: 160, speed: 0.002, texture: './earth.jpg', glow: '718ff8' },
-    { name: 'Mars', size: 3.5, distance: 200, speed: 0.0015, texture: './mars.jpg', glow: 0xff4500 },
-    { name: 'Jupiter', size: 15, distance: 300, speed: 0.0008, texture: './jupiter.jpg', glow: 'C07B41' },
-    { name: 'Saturn', size: 12, distance: 400, speed: 0.0005, texture: './saturn.jpg', glow: 0xffd700 },
-    { name: 'Uranus', size: 9, distance: 500, speed: 0.0003, texture: './uranus.jpg', glow: 0x00ffff },
-    { name: 'Neptune', size: 20, distance: 600, speed: 0.0002, texture: './neptune.jpg', glow: '718ff8' }
-];
+      // Function to add rings (for Saturn)
+      function createRings(planet, innerRadius, outerRadius, texturePath) {
+        let segments = 64;
+        let ringGeometry = new THREE.BufferGeometry();
+        let positions = [];
+        let uvs = [];
+        let indices = [];
 
+        for (let i = 0; i <= segments; i++) {
+          let angle = (i / segments) * Math.PI * 2;
+          let xInner = innerRadius * Math.cos(angle);
+          let zInner = innerRadius * Math.sin(angle);
+          let xOuter = outerRadius * Math.cos(angle);
+          let zOuter = outerRadius * Math.sin(angle);
 
-    planetData.forEach(data => {
-        let planet = createLabeledObject(data.name, data.size, data.texture, data.glow);
-        scene.add(planet);
-        planets.push({ mesh: planet, speed: data.speed, distance: data.distance, angle: Math.random() * Math.PI * 2 });
-    });
+          positions.push(xInner, 0, zInner, xOuter, 0, zOuter);
+          uvs.push(i / segments, 0, i / segments, 1);
 
-    let controls = new THREE.OrbitControls(camera, renderer.domElement);
-    camera.position.set(0, 0, 1000);
-    controls.update();
+          if (i < segments) {
+            let base = i * 2;
+            indices.push(
+              base,
+              base + 1,
+              base + 2,
+              base + 1,
+              base + 3,
+              base + 2
+            );
+          }
+        }
 
-    function animate() {
-        requestAnimationFrame(animate);
-        
-        planets.forEach(planet => {
-            planet.angle += planet.speed;
-            planet.mesh.position.x = planet.distance * Math.cos(planet.angle);
-            planet.mesh.position.z = planet.distance * Math.sin(planet.angle);
-            planet.mesh.rotation.y += 0.02;
-            
-            let vector = new THREE.Vector3();
-            planet.mesh.getWorldPosition(vector);
-            let coords = vector.project(camera);
-            let x = (coords.x * 0.5 + 0.5) * window.innerWidth;
-            let y = (coords.y * -0.5 + 0.5) * window.innerHeight;
-            planet.mesh.label.style.transform = `translate(${x}px, ${y}px)`;
+        ringGeometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(positions, 3)
+        );
+        ringGeometry.setAttribute(
+          "uv",
+          new THREE.Float32BufferAttribute(uvs, 2)
+        );
+        ringGeometry.setIndex(indices);
+
+        let ringMaterial = new THREE.MeshBasicMaterial({
+          map: textureLoader.load(texturePath),
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.6,
         });
-        
+
+        let ring = new THREE.Mesh(ringGeometry, ringMaterial);
+
+        // Fix ring rotation to be horizontal instead of perpendicular
+        ring.rotation.y = -Math.PI / 2; // Ensures the rings are aligned in Saturn's plane
+
+        planet.add(ring);
+      }
+
+      let planets = [];
+      let planetData = [
+        {
+          name: "Mercury",
+          size: 2.4,
+          distance: 80,
+          speed: 0.004,
+          texture: "./mercury.jpg",
+          glow: "C07B41",
+        },
+        {
+          name: "Venus",
+          size: 6,
+          distance: 120,
+          speed: 0.003,
+          texture: "./venus2.jpg",
+          glow: "C07B41",
+        },
+        {
+          name: "Earth",
+          size: 6.4,
+          distance: 160,
+          speed: 0.002,
+          texture: "./earth.jpg",
+          glow: "718ff8",
+        },
+        {
+          name: "Mars",
+          size: 3.4,
+          distance: 200,
+          speed: 0.0015,
+          texture: "./mars.jpg",
+          glow: "C07B41",
+        },
+        {
+          name: "Jupiter",
+          size: 40,
+          distance: 300,
+          speed: 0.0008,
+          texture: "./jupiter.jpg",
+          glow: "C07B41",
+        },
+        {
+          name: "Saturn",
+          size: 28,
+          distance: 400,
+          speed: 0.0005,
+          texture: "./saturn.jpg",
+          glow: "C07B41",
+          rings: true,
+          ringTexture: "./saturn_ring.jpg",
+        },
+        {
+          name: "Uranus",
+          size: 15,
+          distance: 500,
+          speed: 0.0003,
+          texture: "./uranus.jpg",
+          glow: "C07B41",
+        },
+        {
+          name: "Neptune",
+          size: 14,
+          distance: 600,
+          speed: 0.0002,
+          texture: "./neptune.jpg",
+          glow: "718ff8",
+        },
+      ];
+
+      planetData.forEach((data) => {
+        let planet = createLabeledObject(
+          data.name,
+          data.size,
+          data.texture,
+          data.glow
+        );
+        scene.add(planet);
+        planets.push({
+          mesh: planet,
+          speed: data.speed,
+          distance: data.distance,
+          angle: Math.random() * Math.PI * 2,
+        });
+        if (data.rings) {
+          createRings(
+            planet,
+            data.size * 1.5,
+            data.size * 2.5,
+            data.ringTexture
+          );
+        }
+      });
+
+      let controls = new THREE.OrbitControls(camera, renderer.domElement);
+      camera.position.set(0, 0, 1000);
+      controls.update();
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        sun.rotation.y += 0.002; // Rotate the Sun
+
+        planets.forEach((planet) => {
+          planet.angle += planet.speed;
+          planet.mesh.position.x = planet.distance * Math.cos(planet.angle);
+          planet.mesh.position.z = planet.distance * Math.sin(planet.angle);
+          planet.mesh.rotation.y += 0.02;
+
+          let vector = new THREE.Vector3();
+          planet.mesh.getWorldPosition(vector);
+          let coords = vector.project(camera);
+          let x = (coords.x * 0.5 + 0.5) * window.innerWidth;
+          let y = (coords.y * -0.5 + 0.5) * window.innerHeight;
+          planet.mesh.label.style.transform = `translate(${x}px, ${y}px)`;
+        });
+
         renderer.render(scene, camera);
-    }
-    animate();
-</script>
-</body>
+      }
+
+      // Create UI buttons
+      let controlsContainer = document.createElement("div");
+      controlsContainer.style.position = "absolute";
+      controlsContainer.style.top = "10px";
+      controlsContainer.style.left = "10px";
+      controlsContainer.style.zIndex = "100";
+      controlsContainer.style.background = "rgba(0, 0, 0, 0.5)";
+      controlsContainer.style.padding = "10px";
+      controlsContainer.style.borderRadius = "10px";
+      document.body.appendChild(controlsContainer);
+
+      // Function to create buttons for each planet
+      function createPlanetButton(planet, index) {
+        let button = document.createElement("button");
+        button.innerText = planet.name;
+        button.style.margin = "5px";
+        button.style.padding = "8px";
+        button.style.cursor = "pointer";
+        button.style.border = "none";
+        button.style.background = "#fff";
+        button.style.color = "#000";
+        button.style.borderRadius = "5px";
+
+        button.addEventListener("click", () =>
+          moveCameraTo(planets[index].mesh)
+        );
+        controlsContainer.appendChild(button);
+      }
+
+      // Create a button for the Sun
+      let sunButton = document.createElement("button");
+      sunButton.innerText = "Sun";
+      sunButton.style.margin = "5px";
+      sunButton.style.padding = "8px";
+      sunButton.style.cursor = "pointer";
+      sunButton.style.border = "none";
+      sunButton.style.background = "#ff4500";
+      sunButton.style.color = "#fff";
+      sunButton.style.borderRadius = "5px";
+      sunButton.addEventListener("click", () => moveCameraTo(sun));
+      controlsContainer.appendChild(sunButton);
+
+      // Create buttons for each planet
+      planetData.forEach((planet, index) => {
+        createPlanetButton(planet, index);
+      });
+
+      // Function to Move Camera to a Planet
+      function moveCameraTo(target) {
+        let targetPosition = new THREE.Vector3();
+        target.getWorldPosition(targetPosition);
+
+        // Move camera to focus on the selected object
+        camera.position.set(
+          targetPosition.x + 100, // Offset position to view it better
+          targetPosition.y + 50,
+          targetPosition.z + 100
+        );
+
+        // Change OrbitControls target dynamically
+        controls.target.copy(targetPosition);
+        controls.update();
+      }
+
+      animate();
+    </script>
+  </body>
 </html>
