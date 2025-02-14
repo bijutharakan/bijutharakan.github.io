@@ -82,7 +82,7 @@
       }
 
       // Sun with rotation
-      let sun = createLabeledObject("Sun", 90, "./img/sun.jpg", 0xff4500);
+      let sun = createLabeledObject("Sun", 120, "./img/sun.jpg", 0xff4500);
       scene.add(sun);
 
       // Function to add rings (for Saturn)
@@ -152,7 +152,7 @@
         {
           name: "Mercury",
           size: 2.4,
-          distance: 100,
+          distance: 160,
           speed: 0.004,
           texture: "./img/mercury.jpg",
           glow: "C07B41",
@@ -161,7 +161,7 @@
         {
           name: "Venus",
           size: 6,
-          distance: 145,
+          distance: 195,
           speed: 0.003,
           texture: "./img/venus2.jpg",
           glow: "C07B41",
@@ -170,7 +170,7 @@
         {
           name: "Earth",
           size: 6.4,
-          distance: 200,
+          distance: 250,
           speed: 0.002,
           texture: "./img/earth.jpg",
           glow: "718ff8",
@@ -187,7 +187,7 @@
         {
           name: "Mars",
           size: 3.4,
-          distance: 240,
+          distance: 300,
           speed: 0.0015,
           texture: "./img/mars.jpg",
           glow: "C07B41",
@@ -211,7 +211,7 @@
         {
           name: "Jupiter",
           size: 40,
-          distance: 360,
+          distance: 450,
           speed: 0.0008,
           texture: "./img/jupiter.jpg",
           glow: "C07B41",
@@ -254,7 +254,7 @@
         {
           name: "Saturn",
           size: 28,
-          distance: 480,
+          distance: 600,
           speed: 0.0005,
           texture: "./img/saturn.jpg",
           glow: "C07B41",
@@ -283,7 +283,7 @@
         {
           name: "Uranus",
           size: 15,
-          distance: 590,
+          distance: 750,
           speed: 0.0003,
           texture: "./img/uranus.jpg",
           glow: "C07B41",
@@ -297,7 +297,7 @@
         {
           name: "Neptune",
           size: 14,
-          distance: 700,
+          distance: 890,
           speed: 0.0002,
           texture: "./img/neptune.jpg",
           glow: "718ff8",
@@ -613,9 +613,9 @@
         // set seperate camera position for the sun
         if (target.name === "Sun") {
           camera.position.set(
-            targetPosition.x + 100,
-            targetPosition.y + 100,
-            targetPosition.z + 100
+            targetPosition.x + 160,
+            targetPosition.y + 140,
+            targetPosition.z + 160
           );
         } else {
           camera.position.set(
