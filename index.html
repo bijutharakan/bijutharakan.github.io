@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Solar System Simulation</title>
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-5RHTMQ481Q"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-5RHTMQ481Q"); // Replace with your Measurement ID
+    </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -698,7 +713,6 @@
       toggleControlsButton.style.zIndex = "101";
       document.body.appendChild(toggleControlsButton);
 
-      
       toggleControlsButton.addEventListener("click", () => {
         if (controlsContainer.style.display === "none") {
           controlsContainer.style.display = "block";
