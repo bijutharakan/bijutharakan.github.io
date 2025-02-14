@@ -682,6 +682,33 @@
       // Call this function after planets and moons are initialized
       createMoonButtons();
 
+      // 🚀 Add Toggle Controls Button
+      let toggleControlsButton = document.createElement("button");
+      toggleControlsButton.innerText = "Hide Controls";
+      toggleControlsButton.style.margin = "5px";
+      toggleControlsButton.style.padding = "8px";
+      toggleControlsButton.style.cursor = "pointer";
+      toggleControlsButton.style.border = "none";
+      toggleControlsButton.style.background = "#333";
+      toggleControlsButton.style.color = "#fff";
+      toggleControlsButton.style.borderRadius = "5px";
+      toggleControlsButton.style.position = "absolute";
+      toggleControlsButton.style.top = "10px";
+      toggleControlsButton.style.right = "10px";
+      toggleControlsButton.style.zIndex = "101";
+      document.body.appendChild(toggleControlsButton);
+
+      
+      toggleControlsButton.addEventListener("click", () => {
+        if (controlsContainer.style.display === "none") {
+          controlsContainer.style.display = "block";
+          toggleControlsButton.innerText = "Hide Controls";
+        } else {
+          controlsContainer.style.display = "none";
+          toggleControlsButton.innerText = "Show Controls";
+        }
+      });
+
       function moveCameraTo(target) {
         console.log(`Moving camera to: ${target.name}`);
 
