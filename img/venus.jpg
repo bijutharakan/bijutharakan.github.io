@@ -123,7 +123,7 @@
 				<!--<a class="button show-on-start text-glow" href="/lab">SolarLab</a>-->
 				<!--<a class="button show-on-start text-glow" href="/spacepedia">Spacepedia</a>-->
 				<!--<a class="button show-on-start text-glow merchandise" href="https://shop.spreadshirt.com/solarsystemscope/" target="_blank">Merchandise!</a>-->
-				<a class="button show-on-start text-glow" href="https://solarsystemscope.de/" target="_blank" style="font-size: 110%; padding-left: 48px; line-height: 68px; background-image: url(../images/icons/navbar_flag_de.png); background-repeat: no-repeat; background-position: 12px center;">SolarSystemScope.DE<span style="position: absolute; left:47px; bottom: -5px; color: #00deff; font-size: 80%;"/>5-in-1 Bundle</span></a>
+				<a class="button show-on-start text-glow" href="https://solarsystemscope.de/" target="_blank" style="font-size: 110%; padding-left: 48px; line-height: 68px; background-image: url(../img/images/icons/navbar_flag_de.png); background-repeat: no-repeat; background-position: 12px center;">SolarSystemScope.DE<span style="position: absolute; left:47px; bottom: -5px; color: #00deff; font-size: 80%;"/>5-in-1 Bundle</span></a>
 				<div class="divider"></div>
 				<a class="btn-type-1-blue menu-hover-start-button">Explore</a>
 				<a class="btn-type-3-green download hidden-xs only-dsk " href="/download">Download App</a>
