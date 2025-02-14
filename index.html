@@ -18,9 +18,26 @@
 
       gtag("config", "G-5RHTMQ481Q"); // Replace with your Measurement ID
     </script>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="apple-touch-icon" href="/img/icon-192.png" />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/service-worker.js")
+            .then((reg) => console.log("✅ Service Worker Registered", reg))
+            .catch((err) =>
+              console.log("❌ Service Worker Registration Failed", err)
+            );
+        });
+      }
+    </script>
+
     <style>
       body {
         margin: 0;
@@ -99,7 +116,7 @@
       }
 
       // Sun with rotation
-      let sun = createLabeledObject("Sun", 120, "./img/sun.jpg", 0xff4500);
+      let sun = createLabeledObject("Sun", 180, "./img/sun.jpg", 0xff4500);
       scene.add(sun);
 
       // Function to add rings (for Saturn)
@@ -169,7 +186,7 @@
         {
           name: "Mercury",
           size: 2.4,
-          distance: 160,
+          distance: 200,
           speed: 0.004,
           texture: "./img/mercury.jpg",
           glow: "C07B41",
@@ -178,7 +195,7 @@
         {
           name: "Venus",
           size: 6,
-          distance: 195,
+          distance: 245,
           speed: 0.003,
           texture: "./img/venus2.jpg",
           glow: "C07B41",
@@ -187,7 +204,7 @@
         {
           name: "Earth",
           size: 6.4,
-          distance: 250,
+          distance: 290,
           speed: 0.002,
           texture: "./img/earth.jpg",
           glow: "718ff8",
@@ -204,7 +221,7 @@
         {
           name: "Mars",
           size: 3.4,
-          distance: 300,
+          distance: 340,
           speed: 0.0015,
           texture: "./img/mars.jpg",
           glow: "C07B41",
@@ -228,7 +245,7 @@
         {
           name: "Jupiter",
           size: 40,
-          distance: 450,
+          distance: 510,
           speed: 0.0008,
           texture: "./img/jupiter.jpg",
           glow: "C07B41",
@@ -271,7 +288,7 @@
         {
           name: "Saturn",
           size: 28,
-          distance: 600,
+          distance: 640,
           speed: 0.0005,
           texture: "./img/saturn.jpg",
           glow: "C07B41",
@@ -300,7 +317,7 @@
         {
           name: "Uranus",
           size: 15,
-          distance: 750,
+          distance: 850,
           speed: 0.0003,
           texture: "./img/uranus.jpg",
           glow: "C07B41",
@@ -314,7 +331,7 @@
         {
           name: "Neptune",
           size: 14,
-          distance: 890,
+          distance: 990,
           speed: 0.0002,
           texture: "./img/neptune.jpg",
           glow: "718ff8",
@@ -546,13 +563,13 @@
 
       let planetRotationSpeeds = {
         Mercury: 0.0005,
-        Venus: -0.0003, // Venus rotates backwards (Retrograde)
-        Earth: 0.002,
+        Venus: -0.0008, // Venus rotates backwards (Retrograde)
+        Earth: 0.008,
         Mars: 0.0025,
         Jupiter: 0.005,
         Saturn: 0.004,
-        Uranus: -0.001, // Uranus rotates sideways (Retrograde)
-        Neptune: 0.003,
+        Uranus: -0.003, // Uranus rotates sideways (Retrograde)
+        Neptune: 0.004,
       };
 
       // Apply Tilt to Planets
@@ -779,6 +796,109 @@
 
         // ✅ Highlight correct button
       }
+
+      let starTexture = textureLoader.load("./img/comet_texture.png");
+
+      let starMaterial2 = new THREE.SpriteMaterial({
+        map: starTexture,
+        color: 0xffffff, // White or slightly yellowish
+        transparent: true,
+        opacity: 0.8,
+      });
+
+      function createStar(x, y, z, size) {
+        size = size * 0.35;
+        let star = new THREE.Sprite(starMaterial2);
+        star.position.set(x, y, z);
+        star.scale.set(size, size, 1);
+        scene.add(star);
+        return star;
+      }
+
+      const orionStarsData = [
+        { name: "Betelgeuse", RA: 88.8, Dec: 7.4, size: 25 },
+        { name: "Bellatrix", RA: 81.3, Dec: 6.3, size: 22 },
+        { name: "Mintaka", RA: 78.6, Dec: -0.3, size: 20 },
+        { name: "Alnilam", RA: 84.0, Dec: -1.2, size: 20 },
+        { name: "Alnitak", RA: 86.1, Dec: -1.9, size: 20 },
+        { name: "Saiph", RA: 86.9, Dec: -9.7, size: 22 },
+        { name: "Rigel", RA: 78.6, Dec: -8.2, size: 24 },
+      ];
+
+      function createConstellation(starData, radius = 4000, color = 0xffffff) {
+        let constellationStars = new THREE.Group();
+
+        starData.forEach((star) => {
+          let raRad = (star.RA / 24) * Math.PI * 2; // Convert Right Ascension to radians
+          let decRad = (star.Dec / 90) * (Math.PI / 2); // Convert Declination to radians
+
+          let x = radius * Math.cos(decRad) * Math.cos(raRad);
+          let y = radius * Math.sin(decRad);
+          let z = radius * Math.cos(decRad) * Math.sin(raRad);
+
+          let starGeometry = new THREE.SphereGeometry(star.size, 12, 12);
+          let starMaterial = new THREE.MeshBasicMaterial({ color: color });
+          let starMesh = new THREE.Mesh(starGeometry, starMaterial);
+          starMesh.position.set(x, y, z);
+
+          constellationStars.add(starMesh);
+        });
+
+        return constellationStars;
+      }
+
+      const bigDipperStarsData = [
+        { name: "Dubhe", RA: 165.9, Dec: 61.7, size: 24 },
+        { name: "Merak", RA: 165.5, Dec: 56.4, size: 22 },
+        { name: "Phecda", RA: 174.3, Dec: 53.7, size: 10 },
+        { name: "Megrez", RA: 178.4, Dec: 57.0, size: 10 },
+        { name: "Alioth", RA: 193.5, Dec: 55.9, size: 12 },
+        { name: "Mizar", RA: 200.9, Dec: 54.9, size: 12 },
+        { name: "Alkaid", RA: 206.9, Dec: 49.3, size: 14 },
+      ];
+
+      const cassiopeiaStarsData = [
+        { name: "Schedar", RA: 10.1, Dec: 56.5, size: 12 },
+        { name: "Caph", RA: 2.3, Dec: 59.1, size: 10 },
+        { name: "Gamma Cas", RA: 6.1, Dec: 60.7, size: 10 },
+        { name: "Ruchbah", RA: 14.2, Dec: 59.2, size: 10 },
+        { name: "Segin", RA: 18.4, Dec: 63.7, size: 10 },
+      ];
+
+      const pleiadesStarsData = [
+        { name: "Alcyone", RA: 56.9, Dec: 24.1, size: 12 },
+        { name: "Atlas", RA: 56.4, Dec: 23.8, size: 10 },
+        { name: "Electra", RA: 56.2, Dec: 24.1, size: 10 },
+        { name: "Maia", RA: 56.4, Dec: 24.2, size: 10 },
+        { name: "Merope", RA: 56.1, Dec: 23.7, size: 10 },
+        { name: "Taygeta", RA: 56.1, Dec: 24.4, size: 10 },
+        { name: "Pleione", RA: 56.7, Dec: 24.1, size: 10 },
+      ];
+
+      let orionStars = createConstellation(orionStarsData, 9000, 0xffffff);
+      let bigDipperStars = createConstellation(
+        bigDipperStarsData,
+        9200,
+        0xffffff
+      );
+      let cassiopeiaStars = createConstellation(
+        cassiopeiaStarsData,
+        8000,
+        0xffffff
+      );
+      let pleiadesStars = createConstellation(
+        pleiadesStarsData,
+        8000,
+        0xffffff
+      );
+
+      let backgroundStars = new THREE.Group();
+      backgroundStars.add(orionStars);
+      backgroundStars.add(bigDipperStars);
+      backgroundStars.add(cassiopeiaStars);
+      backgroundStars.add(pleiadesStars);
+
+      scene.add(backgroundStars);
 
       animate();
     </script>
