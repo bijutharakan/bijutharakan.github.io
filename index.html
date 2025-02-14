@@ -390,15 +390,11 @@
       let activeButton = null; // Track active button
 
       function toggleFollowObject(objectMesh, button) {
-        console.log("toggleFollowObject called for:", objectMesh.name);
-
         if (targetObject === objectMesh && isFollowing) {
-          console.log("Stopping follow mode, resetting camera.");
           resetCameraPosition();
           return;
         }
 
-        console.log("Switching camera to:", objectMesh.name);
         targetObject = objectMesh;
         isFollowing = true;
 
@@ -647,24 +643,60 @@
       createMoonButtons();
 
       function moveCameraTo(target) {
+        console.log(`Moving camera to: ${target.name}`);
+
         let targetPosition = new THREE.Vector3();
         target.getWorldPosition(targetPosition);
-        // set seperate camera position for the sun
+
         if (target.name === "Sun") {
+          if (activeButton) {
+            activeButton.style.background = "#fff";
+            activeButton.style.color = "#000";
+            activeButton.innerText = activeButton.dataset.name;
+          }
+
+          // Special offset for Sun
           camera.position.set(
             targetPosition.x + 160,
             targetPosition.y + 140,
             targetPosition.z + 160
           );
+          controls.target.copy(targetPosition);
+
+          //   // Toggle Sun button: If already selected, reset camera
+          //   if (activeButton === sunButton) {
+          //     resetCameraPosition();
+          //     return;
+          //   }
         } else {
-          camera.position.set(
-            targetPosition.x + 50,
-            targetPosition.y + 30,
-            targetPosition.z + 50
-          );
+          // Regular offset for planets & moons
+          let offset = target.name.toLowerCase().includes("moon")
+            ? new THREE.Vector3(-15, 5, -25)
+            : new THREE.Vector3(-50, 20, -100);
+
+          camera.position.copy(targetPosition.clone().add(offset));
+          controls.target.copy(targetPosition);
         }
-        controls.target.copy(targetPosition);
+
         controls.update();
+
+        // ✅ Reset Follow Mode when moving to Sun
+        if (target.name === "Sun") {
+          targetObject = null;
+          isFollowing = false;
+        } else {
+          targetObject = target;
+          isFollowing = true;
+        }
+
+        // ✅ Reset previous active button
+        if (activeButton) {
+          activeButton.style.background = "#fff";
+          activeButton.style.color = "#000";
+          activeButton.innerText = activeButton.dataset.name;
+        }
+
+        // ✅ Highlight correct button
       }
 
       animate();
