@@ -388,19 +388,27 @@
       let defaultCameraPosition = new THREE.Vector3(0, 200, 1000); // Initial camera position
 
       function toggleFollowObject(objectMesh) {
+
         if (targetObject === objectMesh && isFollowing) {
           resetCameraPosition();
-        } else {
-          targetObject = objectMesh;
-          isFollowing = true;
-
-          // ✅ Immediately move camera behind the object for better focus
-          let targetPosition = new THREE.Vector3();
-          objectMesh.getWorldPosition(targetPosition);
-          let offset = new THREE.Vector3(-50, 20, -100); // Adjust camera distance
-          camera.position.copy(targetPosition.clone().add(offset));
-          controls.target.copy(targetPosition);
+          return;
         }
+
+        targetObject = objectMesh;
+        isFollowing = true;
+
+        let targetPosition = new THREE.Vector3();
+        objectMesh.getWorldPosition(targetPosition);
+
+        let offset = objectMesh.name.toLowerCase().includes("moon")
+          ? new THREE.Vector3(-15, 5, -25) // Closer for moons
+          : new THREE.Vector3(-50, 20, -100); // Standard for planets
+
+        camera.position.copy(targetPosition.clone().add(offset));
+        controls.target.copy(targetPosition);
+        controls.update();
+
+        console.log("Camera moved to:", camera.position);
       }
 
       function resetCameraPosition() {
@@ -440,6 +448,7 @@
             moon.mesh.rotation.y += 0.02; // Moon self-rotation
           });
 
+          // Update planet labels position
           let vector = new THREE.Vector3();
           planet.mesh.getWorldPosition(vector);
           let coords = vector.project(camera);
@@ -448,17 +457,16 @@
           planet.mesh.label.style.transform = `translate(${x}px, ${y}px)`;
         });
 
-        // 🚀 Camera follows the target object (planet or moon) if enabled
+        // 🚀 Ensure camera follows the selected object (planet or moon)
         if (isFollowing && targetObject) {
           let targetPosition = new THREE.Vector3();
           targetObject.getWorldPosition(targetPosition);
 
-          let offset = targetObject.name.includes("Moon")
-            ? new THREE.Vector3(-30, 15, -50) // Smaller offset for moons
-            : new THREE.Vector3(-50, 20, -100); // Regular offset for planets
+          let offset = targetObject.name.toLowerCase().includes("moon")
+            ? new THREE.Vector3(-15, 5, -25) // Closer for moons
+            : new THREE.Vector3(-50, 20, -100); // Standard for planets
 
           let cameraPosition = targetPosition.clone().add(offset);
-
           camera.position.lerp(cameraPosition, 0.1);
           controls.target.copy(targetPosition);
         }
@@ -579,7 +587,6 @@
         planets.forEach((planet) => {
           planet.moons.forEach((moon) => {
             if (moon && moon.mesh) {
-              // Create a button for each moon
               let moonButton = document.createElement("button");
               moonButton.innerText = `${planet.name} - ${
                 moon.mesh.name || moon.name
@@ -592,12 +599,11 @@
               moonButton.style.color = "#000";
               moonButton.style.borderRadius = "5px";
 
-              // Add event listener to move camera to the moon when clicked
-              moonButton.addEventListener("click", () =>
-                moveCameraTo(moon.mesh)
-              );
+              // ✅ Add explicit click event
+              moonButton.addEventListener("click", () => {
+                toggleFollowObject(moon.mesh);
+              });
 
-              // Append button to the controls container
               controlsContainer.appendChild(moonButton);
             }
           });
