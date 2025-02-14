@@ -387,13 +387,18 @@
       let isFollowing = false; // Toggle flag for following mode
       let defaultCameraPosition = new THREE.Vector3(0, 200, 1000); // Initial camera position
 
-      function toggleFollowObject(objectMesh) {
+      let activeButton = null; // Track active button
+
+      function toggleFollowObject(objectMesh, button) {
+        console.log("toggleFollowObject called for:", objectMesh.name);
 
         if (targetObject === objectMesh && isFollowing) {
+          console.log("Stopping follow mode, resetting camera.");
           resetCameraPosition();
           return;
         }
 
+        console.log("Switching camera to:", objectMesh.name);
         targetObject = objectMesh;
         isFollowing = true;
 
@@ -409,6 +414,18 @@
         controls.update();
 
         console.log("Camera moved to:", camera.position);
+
+        // ✅ Update button UI
+        if (activeButton) {
+          activeButton.style.background = "#fff"; // Reset previous button
+          activeButton.style.color = "#000";
+          activeButton.innerText = activeButton.dataset.name; // Restore name
+        }
+
+        activeButton = button;
+        button.style.background = "#4CAF50"; // Green when active
+        button.style.color = "#fff";
+        button.innerText = `Following: ${objectMesh.name}`;
       }
 
       function resetCameraPosition() {
@@ -417,6 +434,14 @@
         camera.position.copy(defaultCameraPosition);
         controls.target.set(0, 0, 0);
         controls.update();
+
+        // ✅ Reset button UI
+        if (activeButton) {
+          activeButton.style.background = "#fff"; // Reset previous button
+          activeButton.style.color = "#000";
+          activeButton.innerText = activeButton.dataset.name; // Restore name
+          activeButton = null;
+        }
       }
 
       function animate() {
@@ -518,6 +543,7 @@
       function createPlanetButton(planet, index) {
         let button = document.createElement("button");
         button.innerText = planet.name;
+        button.dataset.name = planet.name; // Store original name
         button.style.margin = "5px";
         button.style.padding = "8px";
         button.style.cursor = "pointer";
@@ -527,7 +553,7 @@
         button.style.borderRadius = "5px";
 
         button.addEventListener("click", () =>
-          toggleFollowObject(planets[index].mesh)
+          toggleFollowObject(planets[index].mesh, button)
         );
         controlsContainer.appendChild(button);
 
@@ -535,6 +561,9 @@
           if (moon && moon.mesh) {
             let moonButton = document.createElement("button");
             moonButton.innerText = `${planet.name} - ${
+              moon.mesh.name || moon.name
+            }`;
+            moonButton.dataset.name = `${planet.name} - ${
               moon.mesh.name || moon.name
             }`;
             moonButton.style.margin = "3px";
@@ -546,7 +575,7 @@
             moonButton.style.borderRadius = "5px";
 
             moonButton.addEventListener("click", () =>
-              toggleFollowObject(moon.mesh)
+              toggleFollowObject(moon.mesh, moonButton)
             );
             controlsContainer.appendChild(moonButton);
           }
@@ -591,6 +620,9 @@
               moonButton.innerText = `${planet.name} - ${
                 moon.mesh.name || moon.name
               }`;
+              moonButton.dataset.name = `${planet.name} - ${
+                moon.mesh.name || moon.name
+              }`;
               moonButton.style.margin = "3px";
               moonButton.style.padding = "6px";
               moonButton.style.cursor = "pointer";
@@ -599,9 +631,10 @@
               moonButton.style.color = "#000";
               moonButton.style.borderRadius = "5px";
 
-              // ✅ Add explicit click event
+              // ✅ Pass correct moon mesh and button reference
               moonButton.addEventListener("click", () => {
-                toggleFollowObject(moon.mesh);
+                console.log(`Moon Button Clicked: ${moon.mesh.name}`); // Debugging
+                toggleFollowObject(moon.mesh, moonButton);
               });
 
               controlsContainer.appendChild(moonButton);
