@@ -21,6 +21,8 @@
 
   <body>
     <script>
+      let isPaused = false; // Track whether animation is paused
+
       let scene = new THREE.Scene();
       let camera = new THREE.PerspectiveCamera(
         75,
@@ -401,9 +403,21 @@
         let targetPosition = new THREE.Vector3();
         objectMesh.getWorldPosition(targetPosition);
 
-        let offset = objectMesh.name.toLowerCase().includes("moon")
-          ? new THREE.Vector3(-15, 5, -25) // Closer for moons
-          : new THREE.Vector3(-50, 20, -100); // Standard for planets
+        let isMoon = objectMesh.name.toLowerCase().includes("moon");
+        let offset = isMoon
+          ? new THREE.Vector3(-10, 3, -15) // Even closer for moons
+          : new THREE.Vector3(-30, 10, -50); // Closer for planets
+
+        camera.position.copy(targetPosition.clone().add(offset));
+        controls.target.copy(targetPosition);
+
+        // ✅ Adjust zoom dynamically
+        // Allow users to zoom much closer when following planets or moons
+        controls.minDistance = isMoon ? 0.5 : 2; // Super close for moons
+        controls.maxDistance = isMoon ? 50 : 200; // Closer max zoom for moons
+        controls.enableZoom = true; // Ensure zoom is enabled
+
+        controls.update();
 
         camera.position.copy(targetPosition.clone().add(offset));
         controls.target.copy(targetPosition);
@@ -429,13 +443,19 @@
         isFollowing = false;
         camera.position.copy(defaultCameraPosition);
         controls.target.set(0, 0, 0);
+
+        // ✅ Reset zoom limits
+        controls.minDistance = 50;
+        controls.maxDistance = 10000;
+        controls.enableZoom = true; // Ensure zoom works after reset
+
         controls.update();
 
-        // ✅ Reset button UI
+        // Reset active button UI
         if (activeButton) {
-          activeButton.style.background = "#fff"; // Reset previous button
+          activeButton.style.background = "#fff";
           activeButton.style.color = "#000";
-          activeButton.innerText = activeButton.dataset.name; // Restore name
+          activeButton.innerText = activeButton.dataset.name;
           activeButton = null;
         }
       }
@@ -443,53 +463,55 @@
       function animate() {
         requestAnimationFrame(animate);
 
-        sun.rotation.y += 0.002; // Rotate the Sun
+        if (!isPaused) {
+          sun.rotation.y += 0.002; // Rotate the Sun
 
-        planets.forEach((planet) => {
-          planet.angle += planet.speed;
-          planet.mesh.position.x = planet.distance * Math.cos(planet.angle);
-          planet.mesh.position.z = planet.distance * Math.sin(planet.angle);
+          planets.forEach((planet) => {
+            planet.angle += planet.speed;
+            planet.mesh.position.x = planet.distance * Math.cos(planet.angle);
+            planet.mesh.position.z = planet.distance * Math.sin(planet.angle);
 
-          if (planetRotationSpeeds[planet.name]) {
-            planet.mesh.rotation.y += planetRotationSpeeds[planet.name];
-          }
+            if (planetRotationSpeeds[planet.name]) {
+              planet.mesh.rotation.y += planetRotationSpeeds[planet.name];
+            }
 
-          planet.moons.forEach((moon) => {
-            moon.angle += moon.speed;
-            let moonX = moon.distance * Math.cos(moon.angle);
-            let moonZ = moon.distance * Math.sin(moon.angle);
-            let planetPosition = planet.mesh.position;
+            planet.moons.forEach((moon) => {
+              moon.angle += moon.speed;
+              let moonX = moon.distance * Math.cos(moon.angle);
+              let moonZ = moon.distance * Math.sin(moon.angle);
+              let planetPosition = planet.mesh.position;
 
-            moon.mesh.position.set(
-              planetPosition.x + moonX,
-              planetPosition.y,
-              planetPosition.z + moonZ
-            );
+              moon.mesh.position.set(
+                planetPosition.x + moonX,
+                planetPosition.y,
+                planetPosition.z + moonZ
+              );
 
-            moon.mesh.rotation.y += 0.02; // Moon self-rotation
+              moon.mesh.rotation.y += 0.02; // Moon self-rotation
+            });
+
+            // Update planet labels position
+            let vector = new THREE.Vector3();
+            planet.mesh.getWorldPosition(vector);
+            let coords = vector.project(camera);
+            let x = (coords.x * 0.5 + 0.5) * window.innerWidth;
+            let y = (coords.y * -0.5 + 0.5) * window.innerHeight;
+            planet.mesh.label.style.transform = `translate(${x}px, ${y}px)`;
           });
 
-          // Update planet labels position
-          let vector = new THREE.Vector3();
-          planet.mesh.getWorldPosition(vector);
-          let coords = vector.project(camera);
-          let x = (coords.x * 0.5 + 0.5) * window.innerWidth;
-          let y = (coords.y * -0.5 + 0.5) * window.innerHeight;
-          planet.mesh.label.style.transform = `translate(${x}px, ${y}px)`;
-        });
+          // 🚀 Ensure camera follows the selected object (planet or moon)
+          if (isFollowing && targetObject) {
+            let targetPosition = new THREE.Vector3();
+            targetObject.getWorldPosition(targetPosition);
 
-        // 🚀 Ensure camera follows the selected object (planet or moon)
-        if (isFollowing && targetObject) {
-          let targetPosition = new THREE.Vector3();
-          targetObject.getWorldPosition(targetPosition);
+            let offset = targetObject.name.toLowerCase().includes("moon")
+              ? new THREE.Vector3(-15, 5, -25) // Closer for moons
+              : new THREE.Vector3(-50, 20, -100); // Standard for planets
 
-          let offset = targetObject.name.toLowerCase().includes("moon")
-            ? new THREE.Vector3(-15, 5, -25) // Closer for moons
-            : new THREE.Vector3(-50, 20, -100); // Standard for planets
-
-          let cameraPosition = targetPosition.clone().add(offset);
-          camera.position.lerp(cameraPosition, 0.1);
-          controls.target.copy(targetPosition);
+            let cameraPosition = targetPosition.clone().add(offset);
+            camera.position.lerp(cameraPosition, 0.1);
+            controls.target.copy(targetPosition);
+          }
         }
 
         controls.update();
@@ -577,6 +599,24 @@
           }
         });
       }
+
+      // 🚀 Add Pause/Resume Button
+      let pauseButton = document.createElement("button");
+      pauseButton.innerText = "Pause Simulation";
+      pauseButton.style.margin = "5px";
+      pauseButton.style.padding = "8px";
+      pauseButton.style.cursor = "pointer";
+      pauseButton.style.border = "none";
+      pauseButton.style.background = "#007BFF";
+      pauseButton.style.color = "#fff";
+      pauseButton.style.borderRadius = "5px";
+      pauseButton.addEventListener("click", () => {
+        isPaused = !isPaused;
+        pauseButton.innerText = isPaused
+          ? "Resume Simulation"
+          : "Pause Simulation";
+      });
+      controlsContainer.appendChild(pauseButton);
 
       // 🚀 Add Reset Button
       let resetButton = document.createElement("button");
