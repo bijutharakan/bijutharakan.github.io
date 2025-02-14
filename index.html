@@ -86,7 +86,13 @@
       scene.add(sun);
 
       // Function to add rings (for Saturn)
-      function createRings(planet, innerRadius, outerRadius, texturePath) {
+      function createRings(
+        planet,
+        innerRadius,
+        outerRadius,
+        texturePath,
+        tiltAngle
+      ) {
         let segments = 64;
         let ringGeometry = new THREE.BufferGeometry();
         let positions = [];
@@ -130,13 +136,13 @@
           map: textureLoader.load(texturePath),
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: 0.6,
+          opacity: 0.5, // Adjust opacity for realism
         });
 
         let ring = new THREE.Mesh(ringGeometry, ringMaterial);
 
-        // Fix ring rotation to be horizontal instead of perpendicular
-        ring.rotation.y = -Math.PI / 2; // Ensures the rings are aligned in Saturn's plane
+        // ✅ Apply proper tilt angles to rings
+        ring.rotation.x = tiltAngle;
 
         planet.add(ring);
       }
@@ -209,6 +215,11 @@
           speed: 0.0008,
           texture: "./img/jupiter.jpg",
           glow: "C07B41",
+          rings: true,
+          ringTexture: "./img/jupiter_ring2.png", // ✅ Add Jupiter's faint rings
+          innerRingSize: 44,
+          outerRingSize: 60,
+          ringTilt: 0.05, // Slight tilt
           moons: [
             {
               name: "Io",
@@ -248,7 +259,10 @@
           texture: "./img/saturn.jpg",
           glow: "C07B41",
           rings: true,
-          ringTexture: "./img/saturn_ring.jpg",
+          ringTexture: "./img/saturn_ring.png",
+          innerRingSize: 30,
+          outerRingSize: 90,
+          ringTilt: 0.46, // 26.7° tilt
           moons: [
             {
               name: "Titan",
@@ -273,6 +287,11 @@
           speed: 0.0003,
           texture: "./img/uranus.jpg",
           glow: "C07B41",
+          rings: true,
+          ringTexture: "./img/uranus_ring.png", // ✅ Uranus rings tilted
+          innerRingSize: 20,
+          outerRingSize: 35,
+          ringTilt: 1.71, // 98° tilt (almost sideways)
           moons: [],
         },
         {
@@ -282,6 +301,11 @@
           speed: 0.0002,
           texture: "./img/neptune.jpg",
           glow: "718ff8",
+          rings: true,
+          ringTexture: "./img/neptune_ring.png", // ✅ Neptune’s faint rings
+          innerRingSize: 18,
+          outerRingSize: 30,
+          ringTilt: 0.49, // 28.3° tilt
           moons: [
             {
               name: "Triton",
@@ -305,7 +329,6 @@
         let moonInitialPosition = new THREE.Vector3(moonData.distance, 0, 0);
         moon.position.copy(moonInitialPosition);
 
-        // parentPlanet.mesh.add(moon); // ✅ Attach moon to planet so it moves with it
         scene.add(moon);
 
         return {
@@ -348,7 +371,10 @@
             planet,
             data.size * 1.5,
             data.size * 2.5,
-            data.ringTexture
+            data.ringTexture,
+            data.ringTilt,
+            data.innerRingSize,
+            data.outerRingSize
           );
         }
       });
@@ -366,7 +392,10 @@
           planet.angle += planet.speed;
           planet.mesh.position.x = planet.distance * Math.cos(planet.angle);
           planet.mesh.position.z = planet.distance * Math.sin(planet.angle);
-          planet.mesh.rotation.y += 0.02;
+          // ✅ Rotate each planet with its own rotation speed
+          if (planetRotationSpeeds[planet.name]) {
+            planet.mesh.rotation.y += planetRotationSpeeds[planet.name];
+          }
 
           planet.moons.forEach((moon) => {
             moon.angle += moon.speed;
@@ -398,6 +427,35 @@
 
         renderer.render(scene, camera);
       }
+
+      let planetTilts = {
+        Mercury: 0.0349, // 7 degrees
+        Venus: 3.096, // 177 degrees (Retrograde)
+        Earth: 0.4091, // 23.4 degrees
+        Mars: 0.4396, // 25 degrees
+        Jupiter: 0.0546, // 3 degrees
+        Saturn: 0.4665, // 26.7 degrees
+        Uranus: 1.706, // 98 degrees (Retrograde)
+        Neptune: 0.4943, // 28.3 degrees
+      };
+
+      let planetRotationSpeeds = {
+        Mercury: 0.0005,
+        Venus: -0.0003, // Venus rotates backwards (Retrograde)
+        Earth: 0.002,
+        Mars: 0.0025,
+        Jupiter: 0.005,
+        Saturn: 0.004,
+        Uranus: -0.001, // Uranus rotates sideways (Retrograde)
+        Neptune: 0.003,
+      };
+
+      // Apply Tilt to Planets
+      planets.forEach((planet) => {
+        if (planetTilts[planet.name]) {
+          planet.mesh.rotation.z = planetTilts[planet.name]; // Apply axial tilt
+        }
+      });
 
       let controlsContainer = document.createElement("div");
       controlsContainer.style.position = "absolute";
