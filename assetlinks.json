@@ -1,8 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "biju.app.solarsystem",
-        "sha256_cert_fingerprints": ["C6:45:46:46:FF:FA:E7:8A:0E:FE:01:65:08:AC:C4:B5:D3:0D:7B:A2:56:B8:AB:0B:5E:4C:16:12:5B:56:CE:3F"]
-      }
-    }]
