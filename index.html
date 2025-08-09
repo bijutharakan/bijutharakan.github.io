@@ -63,14 +63,38 @@
         10000
       );
       let renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softens shadows
+
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
       let textureLoader = new THREE.TextureLoader();
 
       // Ambient Light
-      let ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+      let ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
       scene.add(ambientLight);
+
+      const sunLight = new THREE.PointLight(0xffffff, 2, 1300);
+      sunLight.position.set(0, 0, 0);
+      sunLight.shadow.mapSize.width = 4096;
+      sunLight.shadow.mapSize.height = 4096;
+      sunLight.shadow.camera.near = 1;
+      sunLight.shadow.camera.far = 25000;
+      sunLight.shadow.camera.left = -5000;
+      sunLight.shadow.camera.right = 5000;
+      sunLight.shadow.camera.top = 5000;
+      sunLight.shadow.camera.bottom = -5000;
+      sunLight.shadow.bias = -0.0005;
+      scene.add(sunLight);
+
+      let groundGeometry = new THREE.PlaneGeometry(20000, 20000);
+      let groundMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });
+      let ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.position.y = -100;
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
 
       // Background Stars
       let starGeometry = new THREE.BufferGeometry();
@@ -96,11 +120,21 @@
         let geometry = new THREE.SphereGeometry(size, 64, 64);
         let material = new THREE.MeshStandardMaterial({
           map: textureLoader.load(texturePath),
+          roughness: 0.8, // less rough = more pronounced highlight
+          metalness: 0.0,
           emissive: emissiveColor,
-          emissiveIntensity: 2,
+          emissiveIntensity: name == "Sun" ? 2 : 0.3,
         });
         let planet = new THREE.Mesh(geometry, material);
         planet.name = name;
+        if (planet.name === "Sun") {
+          planet.castShadow = false;
+          planet.receiveShadow = false;
+        } else {
+          planet.castShadow = true;
+          planet.receiveShadow = true;
+        }
+
         let labelDiv = document.createElement("div");
         labelDiv.style.position = "absolute";
         labelDiv.style.color = "white";
@@ -182,10 +216,12 @@
       }
 
       let planets = [];
+      // More realistic relative sizes (scaled for visibility)
+      // Sun is 109x Earth diameter, Jupiter is 11x Earth
       let planetData = [
         {
           name: "Mercury",
-          size: 2.4,
+          size: 3.8, // 0.38x Earth
           distance: 200,
           speed: 0.004,
           texture: "./img/mercury.jpg",
@@ -194,7 +230,7 @@
         },
         {
           name: "Venus",
-          size: 6,
+          size: 9.5, // 0.95x Earth
           distance: 245,
           speed: 0.003,
           texture: "./img/venus2.jpg",
@@ -203,7 +239,7 @@
         },
         {
           name: "Earth",
-          size: 6.4,
+          size: 10, // Reference size
           distance: 290,
           speed: 0.002,
           texture: "./img/earth.jpg",
@@ -211,8 +247,8 @@
           moons: [
             {
               name: "Moon",
-              size: 1.7,
-              distance: 10,
+              size: 2.7, // 0.27x Earth
+              distance: 15,
               speed: 0.01,
               texture: "./img/moon.jpg",
             },
@@ -220,7 +256,7 @@
         },
         {
           name: "Mars",
-          size: 3.4,
+          size: 5.3, // 0.53x Earth
           distance: 340,
           speed: 0.0015,
           texture: "./img/mars.jpg",
@@ -228,15 +264,15 @@
           moons: [
             {
               name: "Phobos",
-              size: 0.9,
-              distance: 5,
+              size: 0.4,
+              distance: 7,
               speed: 0.015,
               texture: "./img/phobos.png",
             },
             {
               name: "Deimos",
-              size: 0.5,
-              distance: 8,
+              size: 0.3,
+              distance: 10,
               speed: 0.012,
               texture: "./img/deimos.png",
             },
@@ -244,7 +280,7 @@
         },
         {
           name: "Jupiter",
-          size: 40,
+          size: 55, // 11x Earth (scaled down from 110 for visibility)
           distance: 510,
           speed: 0.0008,
           texture: "./img/jupiter.jpg",
@@ -257,29 +293,29 @@
           moons: [
             {
               name: "Io",
-              size: 2.5,
-              distance: 45,
+              size: 2.8, // Similar to Moon
+              distance: 65,
               speed: 0.007,
               texture: "./img/io.png",
             },
             {
               name: "Europa",
-              size: 2.3,
-              distance: 50,
+              size: 2.4,
+              distance: 72,
               speed: 0.006,
               texture: "./img/europa.png",
             },
             {
               name: "Ganymede",
-              size: 2.7,
-              distance: 55,
+              size: 4.1, // Largest moon in solar system
+              distance: 80,
               speed: 0.005,
               texture: "./img/ganymede.png",
             },
             {
               name: "Callisto",
-              size: 2.6,
-              distance: 60,
+              size: 3.8,
+              distance: 90,
               speed: 0.004,
               texture: "./img/callisto.png",
             },
@@ -287,28 +323,28 @@
         },
         {
           name: "Saturn",
-          size: 28,
+          size: 45, // 9x Earth (scaled down from 90)
           distance: 640,
           speed: 0.0005,
           texture: "./img/saturn.jpg",
           glow: "C07B41",
           rings: true,
           ringTexture: "./img/saturn_ring.png",
-          innerRingSize: 30,
-          outerRingSize: 90,
+          innerRingSize: 50,
+          outerRingSize: 120,
           ringTilt: 0.46, // 26.7° tilt
           moons: [
             {
               name: "Titan",
-              size: 3.2,
-              distance: 36,
+              size: 4.0, // Larger than Mercury
+              distance: 55,
               speed: 0.006,
               texture: "./img/titan.png",
             },
             {
               name: "Enceladus",
-              size: 1.1,
-              distance: 32,
+              size: 0.4,
+              distance: 48,
               speed: 0.008,
               texture: "./img/enceladus.png",
             },
@@ -316,35 +352,35 @@
         },
         {
           name: "Uranus",
-          size: 15,
+          size: 20, // 4x Earth
           distance: 850,
           speed: 0.0003,
           texture: "./img/uranus.jpg",
           glow: "C07B41",
           rings: true,
           ringTexture: "./img/uranus_ring.png", // ✅ Uranus rings tilted
-          innerRingSize: 20,
-          outerRingSize: 35,
+          innerRingSize: 25,
+          outerRingSize: 40,
           ringTilt: 1.71, // 98° tilt (almost sideways)
           moons: [],
         },
         {
           name: "Neptune",
-          size: 14,
+          size: 19.5, // 3.9x Earth
           distance: 990,
           speed: 0.0002,
           texture: "./img/neptune.jpg",
           glow: "718ff8",
           rings: true,
-          ringTexture: "./img/neptune_ring.png", // ✅ Neptune’s faint rings
-          innerRingSize: 18,
-          outerRingSize: 30,
+          ringTexture: "./img/neptune_ring.png", // ✅ Neptune's faint rings
+          innerRingSize: 24,
+          outerRingSize: 38,
           ringTilt: 0.49, // 28.3° tilt
           moons: [
             {
               name: "Triton",
-              size: 2.5,
-              distance: 20,
+              size: 2.1,
+              distance: 25,
               speed: 0.007,
               texture: "./img/triton.png",
             },
@@ -358,6 +394,8 @@
         });
         let moon = new THREE.Mesh(moonGeometry, moonMaterial);
         moon.name = moonData.name;
+        moon.castShadow = true;
+        moon.receiveShadow = true;
 
         // ✅ Set moon’s initial position relative to the planet
         let moonInitialPosition = new THREE.Vector3(moonData.distance, 0, 0);
@@ -380,8 +418,10 @@
           data.texture,
           data.glow
         );
-        scene.add(planet);
 
+
+        scene.add(planet);
+        // Removed debug box helper
         let planetObject = {
           name: data.name,
           mesh: planet,
@@ -459,15 +499,20 @@
 
         // ✅ Update button UI
         if (activeButton) {
-          activeButton.style.background = "#fff"; // Reset previous button
-          activeButton.style.color = "#000";
-          activeButton.innerText = activeButton.dataset.name; // Restore name
+          activeButton.style.background = activeButton.dataset.originalBg || "rgba(255,255,255,0.1)";
+          activeButton.style.color = activeButton.dataset.originalColor || "#fff";
+          activeButton.style.borderColor = activeButton.dataset.originalBorder || "rgba(255,255,255,0.3)";
+          activeButton.innerText = activeButton.dataset.name;
         }
 
         activeButton = button;
-        button.style.background = "#4CAF50"; // Green when active
-        button.style.color = "#fff";
-        button.innerText = `Following: ${objectMesh.name}`;
+        button.dataset.originalBg = button.style.background;
+        button.dataset.originalColor = button.style.color;
+        button.dataset.originalBorder = button.style.borderColor;
+        button.style.background = "rgba(76, 175, 80, 0.4)";
+        button.style.borderColor = "#4CAF50";
+        button.style.color = "#90ee90";
+        button.innerText = `▶ ${objectMesh.name}`;
       }
 
       function resetCameraPosition() {
@@ -485,13 +530,13 @@
 
         // Reset active button UI
         if (activeButton) {
-          activeButton.style.background = "#fff";
-          activeButton.style.color = "#000";
+          activeButton.style.background = activeButton.dataset.originalBg || "rgba(255,255,255,0.1)";
+          activeButton.style.color = activeButton.dataset.originalColor || "#fff";
+          activeButton.style.borderColor = activeButton.dataset.originalBorder || "rgba(255,255,255,0.3)";
           activeButton.innerText = activeButton.dataset.name;
           activeButton = null;
         }
       }
-
       function animate() {
         requestAnimationFrame(animate);
 
@@ -533,22 +578,29 @@
 
           // 🚀 Ensure camera follows the selected object (planet or moon)
           if (isFollowing && targetObject) {
-            let targetPosition = new THREE.Vector3();
-            targetObject.getWorldPosition(targetPosition);
-
-            let offset = targetObject.name.toLowerCase().includes("moon")
-              ? new THREE.Vector3(-15, 5, -25) // Closer for moons
-              : new THREE.Vector3(-50, 20, -100); // Standard for planets
-
-            let cameraPosition = targetPosition.clone().add(offset);
-            camera.position.lerp(cameraPosition, 0.1);
-            controls.target.copy(targetPosition);
+            // Find if it's a planet
+            let targetPlanet = planets.find(p => p.mesh === targetObject);
+            
+            if (targetPlanet) {
+              chaseCameraBehind(targetPlanet);
+            } else {
+              // Check if it's a moon
+              for (let planet of planets) {
+                let targetMoon = planet.moons.find(m => m.mesh === targetObject);
+                if (targetMoon) {
+                  chaseCameraBehind(targetMoon);
+                  break;
+                }
+              }
+            }
           }
         }
 
         controls.update();
         renderer.render(scene, camera);
       }
+      // const shadowCameraHelper = new THREE.CameraHelper(sunLight.shadow.camera);
+      // scene.add(shadowCameraHelper);
 
       let planetTilts = {
         Mercury: 0.0349, // 7 degrees
@@ -584,95 +636,184 @@
       controlsContainer.style.top = "10px";
       controlsContainer.style.left = "10px";
       controlsContainer.style.zIndex = "100";
-      controlsContainer.style.background = "rgba(0, 0, 0, 0.5)";
-      controlsContainer.style.padding = "10px";
+      controlsContainer.style.background = "rgba(0, 0, 0, 0.8)";
+      controlsContainer.style.padding = "15px";
       controlsContainer.style.borderRadius = "10px";
+      controlsContainer.style.maxWidth = "250px";
+      controlsContainer.style.maxHeight = "90vh";
+      controlsContainer.style.overflowY = "auto";
+      controlsContainer.style.backdropFilter = "blur(10px)";
       document.body.appendChild(controlsContainer);
+      
+      // Add title
+      let title = document.createElement("h3");
+      title.innerText = "Solar System Controls";
+      title.style.color = "#fff";
+      title.style.margin = "0 0 10px 0";
+      title.style.fontSize = "16px";
+      title.style.borderBottom = "1px solid rgba(255,255,255,0.3)";
+      title.style.paddingBottom = "8px";
+      controlsContainer.appendChild(title);
 
-      // Create buttons for each planet
+      // Create buttons for each planet with better organization
       function createPlanetButton(planet, index) {
+        // Create planet container
+        let planetContainer = document.createElement("div");
+        planetContainer.style.marginBottom = "8px";
+        
         let button = document.createElement("button");
         button.innerText = planet.name;
-        button.dataset.name = planet.name; // Store original name
-        button.style.margin = "5px";
+        button.dataset.name = planet.name;
+        button.style.width = "100%";
         button.style.padding = "8px";
         button.style.cursor = "pointer";
-        button.style.border = "none";
-        button.style.background = "#fff";
-        button.style.color = "#000";
+        button.style.border = "1px solid rgba(255,255,255,0.3)";
+        button.style.background = "rgba(255,255,255,0.1)";
+        button.style.color = "#fff";
         button.style.borderRadius = "5px";
+        button.style.fontSize = "14px";
+        button.style.transition = "all 0.3s";
+        
+        button.addEventListener("mouseenter", () => {
+          if (button !== activeButton) {
+            button.style.background = "rgba(255,255,255,0.2)";
+          }
+        });
+        
+        button.addEventListener("mouseleave", () => {
+          if (button !== activeButton) {
+            button.style.background = "rgba(255,255,255,0.1)";
+          }
+        });
 
         button.addEventListener("click", () =>
           toggleFollowObject(planets[index].mesh, button)
         );
-        controlsContainer.appendChild(button);
+        planetContainer.appendChild(button);
 
-        planet.moons.forEach((moon) => {
-          if (moon && moon.mesh) {
-            let moonButton = document.createElement("button");
-            moonButton.innerText = `${planet.name} - ${
-              moon.mesh.name || moon.name
-            }`;
-            moonButton.dataset.name = `${planet.name} - ${
-              moon.mesh.name || moon.name
-            }`;
-            moonButton.style.margin = "3px";
-            moonButton.style.padding = "6px";
-            moonButton.style.cursor = "pointer";
-            moonButton.style.border = "none";
-            moonButton.style.background = "#ccc";
-            moonButton.style.color = "#000";
-            moonButton.style.borderRadius = "5px";
+        // Create moon buttons container
+        if (planet.moons && planet.moons.length > 0) {
+          let moonContainer = document.createElement("div");
+          moonContainer.style.marginLeft = "20px";
+          moonContainer.style.marginTop = "4px";
+          
+          planet.moons.forEach((moon) => {
+            if (moon && moon.mesh) {
+              let moonButton = document.createElement("button");
+              moonButton.innerText = moon.mesh.name || moon.name;
+              moonButton.dataset.name = `${planet.name} - ${
+                moon.mesh.name || moon.name
+              }`;
+              moonButton.style.width = "calc(100% - 10px)";
+              moonButton.style.padding = "6px";
+              moonButton.style.marginBottom = "3px";
+              moonButton.style.cursor = "pointer";
+              moonButton.style.border = "1px solid rgba(255,255,255,0.2)";
+              moonButton.style.background = "rgba(255,255,255,0.05)";
+              moonButton.style.color = "#ccc";
+              moonButton.style.borderRadius = "3px";
+              moonButton.style.fontSize = "12px";
+              moonButton.style.transition = "all 0.3s";
+              
+              moonButton.addEventListener("mouseenter", () => {
+                if (moonButton !== activeButton) {
+                  moonButton.style.background = "rgba(255,255,255,0.15)";
+                }
+              });
+              
+              moonButton.addEventListener("mouseleave", () => {
+                if (moonButton !== activeButton) {
+                  moonButton.style.background = "rgba(255,255,255,0.05)";
+                }
+              });
 
-            moonButton.addEventListener("click", () =>
-              toggleFollowObject(moon.mesh, moonButton)
-            );
-            controlsContainer.appendChild(moonButton);
-          }
-        });
+              moonButton.addEventListener("click", () =>
+                toggleFollowObject(moon.mesh, moonButton)
+              );
+              moonContainer.appendChild(moonButton);
+            }
+          });
+          planetContainer.appendChild(moonContainer);
+        }
+        
+        controlsContainer.appendChild(planetContainer);
       }
 
+      // Add control section
+      let controlSection = document.createElement("div");
+      controlSection.style.marginBottom = "15px";
+      controlSection.style.paddingBottom = "10px";
+      controlSection.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
+      
       // 🚀 Add Pause/Resume Button
       let pauseButton = document.createElement("button");
-      pauseButton.innerText = "Pause Simulation";
-      pauseButton.style.margin = "5px";
+      pauseButton.innerText = "⏸ Pause";
+      pauseButton.style.width = "48%";
       pauseButton.style.padding = "8px";
+      pauseButton.style.marginRight = "4%";
       pauseButton.style.cursor = "pointer";
-      pauseButton.style.border = "none";
-      pauseButton.style.background = "#007BFF";
-      pauseButton.style.color = "#fff";
+      pauseButton.style.border = "1px solid #007BFF";
+      pauseButton.style.background = "rgba(0, 123, 255, 0.2)";
+      pauseButton.style.color = "#4da6ff";
       pauseButton.style.borderRadius = "5px";
+      pauseButton.style.fontSize = "13px";
+      pauseButton.style.transition = "all 0.3s";
       pauseButton.addEventListener("click", () => {
         isPaused = !isPaused;
-        pauseButton.innerText = isPaused
-          ? "Resume Simulation"
-          : "Pause Simulation";
+        pauseButton.innerText = isPaused ? "▶ Resume" : "⏸ Pause";
+        pauseButton.style.background = isPaused ? "rgba(40, 167, 69, 0.2)" : "rgba(0, 123, 255, 0.2)";
+        pauseButton.style.borderColor = isPaused ? "#28a745" : "#007BFF";
+        pauseButton.style.color = isPaused ? "#5cb85c" : "#4da6ff";
       });
-      controlsContainer.appendChild(pauseButton);
+      controlSection.appendChild(pauseButton);
 
       // 🚀 Add Reset Button
       let resetButton = document.createElement("button");
-      resetButton.innerText = "Reset Camera";
-      resetButton.style.margin = "5px";
+      resetButton.innerText = "🔄 Reset";
+      resetButton.style.width = "48%";
       resetButton.style.padding = "8px";
       resetButton.style.cursor = "pointer";
-      resetButton.style.border = "none";
-      resetButton.style.background = "#f00";
-      resetButton.style.color = "#fff";
+      resetButton.style.border = "1px solid #dc3545";
+      resetButton.style.background = "rgba(220, 53, 69, 0.2)";
+      resetButton.style.color = "#ff6b7a";
       resetButton.style.borderRadius = "5px";
+      resetButton.style.fontSize = "13px";
+      resetButton.style.transition = "all 0.3s";
       resetButton.addEventListener("click", resetCameraPosition);
-      controlsContainer.appendChild(resetButton);
+      controlSection.appendChild(resetButton);
+      
+      controlsContainer.appendChild(controlSection);
+      
+      // Add celestial bodies section label
+      let bodiesLabel = document.createElement("div");
+      bodiesLabel.innerText = "Celestial Bodies";
+      bodiesLabel.style.color = "#aaa";
+      bodiesLabel.style.fontSize = "12px";
+      bodiesLabel.style.marginBottom = "8px";
+      bodiesLabel.style.textTransform = "uppercase";
+      bodiesLabel.style.letterSpacing = "1px";
+      controlsContainer.appendChild(bodiesLabel);
 
       // Create a button for the Sun
       let sunButton = document.createElement("button");
-      sunButton.innerText = "Sun";
-      sunButton.style.margin = "5px";
-      sunButton.style.padding = "8px";
+      sunButton.innerText = "☀ Sun";
+      sunButton.style.width = "100%";
+      sunButton.style.padding = "10px";
+      sunButton.style.marginBottom = "10px";
       sunButton.style.cursor = "pointer";
-      sunButton.style.border = "none";
-      sunButton.style.background = "#ff4500";
-      sunButton.style.color = "#fff";
+      sunButton.style.border = "1px solid #ff6600";
+      sunButton.style.background = "rgba(255, 102, 0, 0.3)";
+      sunButton.style.color = "#ffaa44";
       sunButton.style.borderRadius = "5px";
+      sunButton.style.fontSize = "14px";
+      sunButton.style.fontWeight = "bold";
+      sunButton.style.transition = "all 0.3s";
+      sunButton.addEventListener("mouseenter", () => {
+        sunButton.style.background = "rgba(255, 102, 0, 0.5)";
+      });
+      sunButton.addEventListener("mouseleave", () => {
+        sunButton.style.background = "rgba(255, 102, 0, 0.3)";
+      });
       sunButton.addEventListener("click", () => moveCameraTo(sun));
       controlsContainer.appendChild(sunButton);
 
@@ -680,65 +821,95 @@
         createPlanetButton(planet, index);
       });
 
-      function createMoonButtons() {
-        planets.forEach((planet) => {
-          planet.moons.forEach((moon) => {
-            if (moon && moon.mesh) {
-              let moonButton = document.createElement("button");
-              moonButton.innerText = `${planet.name} - ${
-                moon.mesh.name || moon.name
-              }`;
-              moonButton.dataset.name = `${planet.name} - ${
-                moon.mesh.name || moon.name
-              }`;
-              moonButton.style.margin = "3px";
-              moonButton.style.padding = "6px";
-              moonButton.style.cursor = "pointer";
-              moonButton.style.border = "none";
-              moonButton.style.background = "#ccc";
-              moonButton.style.color = "#000";
-              moonButton.style.borderRadius = "5px";
-
-              // ✅ Pass correct moon mesh and button reference
-              moonButton.addEventListener("click", () => {
-                console.log(`Moon Button Clicked: ${moon.mesh.name}`); // Debugging
-                toggleFollowObject(moon.mesh, moonButton);
-              });
-
-              controlsContainer.appendChild(moonButton);
-            }
-          });
-        });
-      }
-
-      // Call this function after planets and moons are initialized
-      createMoonButtons();
-
       // 🚀 Add Toggle Controls Button
       let toggleControlsButton = document.createElement("button");
-      toggleControlsButton.innerText = "Hide Controls";
-      toggleControlsButton.style.margin = "5px";
-      toggleControlsButton.style.padding = "8px";
+      toggleControlsButton.innerText = "◀ Hide";
+      toggleControlsButton.style.padding = "8px 12px";
       toggleControlsButton.style.cursor = "pointer";
-      toggleControlsButton.style.border = "none";
-      toggleControlsButton.style.background = "#333";
+      toggleControlsButton.style.border = "1px solid rgba(255,255,255,0.3)";
+      toggleControlsButton.style.background = "rgba(0, 0, 0, 0.8)";
       toggleControlsButton.style.color = "#fff";
       toggleControlsButton.style.borderRadius = "5px";
       toggleControlsButton.style.position = "absolute";
       toggleControlsButton.style.top = "10px";
       toggleControlsButton.style.right = "10px";
       toggleControlsButton.style.zIndex = "101";
+      toggleControlsButton.style.fontSize = "13px";
+      toggleControlsButton.style.backdropFilter = "blur(10px)";
+      toggleControlsButton.style.transition = "all 0.3s";
       document.body.appendChild(toggleControlsButton);
+
+      toggleControlsButton.addEventListener("mouseenter", () => {
+        toggleControlsButton.style.background = "rgba(0, 0, 0, 0.9)";
+        toggleControlsButton.style.borderColor = "rgba(255,255,255,0.5)";
+      });
+      
+      toggleControlsButton.addEventListener("mouseleave", () => {
+        toggleControlsButton.style.background = "rgba(0, 0, 0, 0.8)";
+        toggleControlsButton.style.borderColor = "rgba(255,255,255,0.3)";
+      });
 
       toggleControlsButton.addEventListener("click", () => {
         if (controlsContainer.style.display === "none") {
           controlsContainer.style.display = "block";
-          toggleControlsButton.innerText = "Hide Controls";
+          toggleControlsButton.innerText = "◀ Hide";
         } else {
           controlsContainer.style.display = "none";
-          toggleControlsButton.innerText = "Show Controls";
+          toggleControlsButton.innerText = "▶ Show";
         }
       });
+
+      function chaseCameraBehind(targetObject) {
+        if (!targetObject || !targetObject.mesh) return;
+        
+        // Get the current world position of the target
+        let targetPosition = new THREE.Vector3();
+        targetObject.mesh.getWorldPosition(targetPosition);
+        
+        // Calculate velocity direction for planets
+        let velocityDir = new THREE.Vector3(0, 0, 1);
+        
+        if (targetObject.distance && targetObject.angle !== undefined) {
+          // For planets: calculate orbital velocity direction
+          let dx = -targetObject.distance * Math.sin(targetObject.angle);
+          let dz = targetObject.distance * Math.cos(targetObject.angle);
+          velocityDir = new THREE.Vector3(dx, 0, dz).normalize();
+        } else {
+          // For moons or other objects: use a default following position
+          let parentPlanet = planets.find(p => 
+            p.moons.some(m => m.mesh === targetObject.mesh)
+          );
+          if (parentPlanet) {
+            // For moons, calculate relative to parent planet
+            let moon = parentPlanet.moons.find(m => m.mesh === targetObject.mesh);
+            if (moon) {
+              let dx = -moon.distance * Math.sin(moon.angle);
+              let dz = moon.distance * Math.cos(moon.angle);
+              velocityDir = new THREE.Vector3(dx, 0, dz).normalize();
+            }
+          }
+        }
+        
+        // Adjust follow distance based on object size
+        let objectSize = targetObject.mesh.geometry.parameters.radius || 10;
+        const FOLLOW_DISTANCE = Math.max(objectSize * 3, 30);
+        const FOLLOW_HEIGHT = Math.max(objectSize * 1.5, 10);
+        
+        // Calculate camera position behind the object
+        let behindVector = velocityDir.clone().multiplyScalar(-FOLLOW_DISTANCE);
+        behindVector.y = FOLLOW_HEIGHT;
+        
+        let desiredCamPos = targetPosition.clone().add(behindVector);
+        
+        // Smoothly interpolate camera position and target
+        camera.position.lerp(desiredCamPos, 0.1);
+        controls.target.lerp(targetPosition, 0.1);
+        
+        // Keep controls enabled for user interaction
+        controls.enableRotate = true;
+        controls.enablePan = true;
+        controls.enableZoom = true;
+      }
 
       function moveCameraTo(target) {
         console.log(`Moving camera to: ${target.name}`);
