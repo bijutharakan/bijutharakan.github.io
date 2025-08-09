@@ -579,7 +579,7 @@
       
       createAsteroidBelt();
 
-      // Create Halley's Comet
+      // Halley's Comet removed per user request
       let halleysComet = null;
       function createHalleysComet() {
         // Comet head
@@ -646,10 +646,17 @@
         };
       }
       
-      createHalleysComet();
+      // createHalleysComet(); // Disabled per user request
 
       let controls = new THREE.OrbitControls(camera, renderer.domElement);
       camera.position.set(0, 0, 1000);
+      // Allow getting extremely close to planets to see surface details
+      controls.minDistance = 0.5; // Can get super close to any object
+      controls.maxDistance = 50000; // Can zoom out to see entire system
+      controls.enableDamping = true; // Smooth camera movement
+      controls.dampingFactor = 0.05;
+      controls.panSpeed = 0.5;
+      controls.rotateSpeed = 0.5;
       controls.update();
 
       let targetObject = null; // Stores the object (planet/moon) to follow
@@ -683,9 +690,9 @@
         camera.position.copy(targetPosition.clone().add(followOffset));
         controls.target.copy(targetPosition);
 
-        // Allow wider zoom range
-        controls.minDistance = objectSize * 1.5;
-        controls.maxDistance = objectSize * 50;
+        // Allow extremely close zoom to see planet surface details
+        controls.minDistance = objectSize * 0.1; // Get super close to surface
+        controls.maxDistance = objectSize * 100; // Can still go far
         controls.enableZoom = true;
         controls.enableRotate = true;
         controls.enablePan = false; // Disable panning while following
@@ -718,9 +725,9 @@
         camera.position.copy(defaultCameraPosition);
         controls.target.set(0, 0, 0);
 
-        // ✅ Reset zoom limits
-        controls.minDistance = 50;
-        controls.maxDistance = 10000;
+        // ✅ Reset zoom limits - allow very close and very far
+        controls.minDistance = 0.5; // Allow extreme close-ups
+        controls.maxDistance = 50000; // See entire solar system
         controls.enableZoom = true; // Ensure zoom works after reset
 
         controls.update();
@@ -787,8 +794,8 @@
             asteroid.mesh.rotation.z += asteroid.rotationSpeed.z * simulationSpeed;
           });
           
-          // Animate Halley's Comet
-          if (halleysComet) {
+          // Halley's Comet animation disabled
+          if (false && halleysComet) {
             halleysComet.angle += halleysComet.speed * simulationSpeed;
             
             // Elliptical orbit calculation
@@ -1397,24 +1404,56 @@
         { name: "Rigel", RA: 78.6, Dec: -8.2, size: 24 },
       ];
 
-      function createConstellation(starData, radius = 4000, color = 0xffffff) {
+      function createConstellation(starData, radius = 8000, color = 0xffffff, name = "") {
         let constellationStars = new THREE.Group();
+        let positions = [];
 
-        starData.forEach((star) => {
-          let raRad = (star.RA / 24) * Math.PI * 2; // Convert Right Ascension to radians
-          let decRad = (star.Dec / 90) * (Math.PI / 2); // Convert Declination to radians
+        starData.forEach((star, index) => {
+          let raRad = (star.RA / 24) * Math.PI * 2;
+          let decRad = (star.Dec / 90) * (Math.PI / 2);
 
           let x = radius * Math.cos(decRad) * Math.cos(raRad);
           let y = radius * Math.sin(decRad);
           let z = radius * Math.cos(decRad) * Math.sin(raRad);
 
-          let starGeometry = new THREE.SphereGeometry(star.size, 12, 12);
-          let starMaterial = new THREE.MeshBasicMaterial({ color: color });
+          // Create brighter, more visible stars
+          let starGeometry = new THREE.SphereGeometry(star.size * 2, 16, 16);
+          let starMaterial = new THREE.MeshBasicMaterial({ 
+            color: color,
+            emissive: color,
+            emissiveIntensity: 2
+          });
           let starMesh = new THREE.Mesh(starGeometry, starMaterial);
           starMesh.position.set(x, y, z);
 
+          // Add glow effect
+          let glowGeometry = new THREE.SphereGeometry(star.size * 4, 8, 8);
+          let glowMaterial = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.3
+          });
+          let glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+          glowMesh.position.copy(starMesh.position);
+          
           constellationStars.add(starMesh);
+          constellationStars.add(glowMesh);
+          
+          positions.push(new THREE.Vector3(x, y, z));
         });
+
+        // Add constellation lines (connect the stars)
+        if (positions.length > 1 && name !== "Pleiades") {
+          const lineGeometry = new THREE.BufferGeometry().setFromPoints(positions);
+          const lineMaterial = new THREE.LineBasicMaterial({ 
+            color: color, 
+            transparent: true,
+            opacity: 0.2,
+            linewidth: 2
+          });
+          const line = new THREE.Line(lineGeometry, lineMaterial);
+          constellationStars.add(line);
+        }
 
         return constellationStars;
       }
@@ -1447,21 +1486,25 @@
         { name: "Pleione", RA: 56.7, Dec: 24.1, size: 10 },
       ];
 
-      let orionStars = createConstellation(orionStarsData, 9000, 0xffffff);
+      // Create constellations with enhanced visibility
+      let orionStars = createConstellation(orionStarsData, 12000, 0xaaaaff, "Orion");
       let bigDipperStars = createConstellation(
         bigDipperStarsData,
-        9200,
-        0xffffff
+        13000,
+        0xffffaa,
+        "BigDipper"
       );
       let cassiopeiaStars = createConstellation(
         cassiopeiaStarsData,
-        8000,
-        0xffffff
+        11000,
+        0xffaaaa,
+        "Cassiopeia"
       );
       let pleiadesStars = createConstellation(
         pleiadesStarsData,
-        8000,
-        0xffffff
+        10000,
+        0xaaffff,
+        "Pleiades"
       );
 
       let backgroundStars = new THREE.Group();
